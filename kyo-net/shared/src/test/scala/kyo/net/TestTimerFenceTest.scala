@@ -12,7 +12,7 @@ class TestTimerFenceTest extends Test:
                 val other = clock.unsafe.sleep(2.seconds)
                 awaitArmed(tc, "close-flush grace", 1.second, 50.millis).map { missing =>
                     assert(!other.done(), "a sleeper of another duration must not be advanced")
-                    assert(missing.exists(_.startsWith(s"the close-flush grace (${1.second}) was never armed")), s"got $missing")
+                    assert(missing.exists(_.startsWith(s"the close-flush grace (${1.second.show}) was never armed")), s"got $missing")
                 }
             }
         }

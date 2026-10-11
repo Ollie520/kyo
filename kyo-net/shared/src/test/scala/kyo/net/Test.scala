@@ -329,7 +329,12 @@ abstract class Test extends kyo.test.Test[Any]:
     def awaitArmed(timeControl: Clock.TimeControl, timer: String, duration: Duration, within: Duration)(using
         Frame
     ): Maybe[String] < Async =
-        Absent
+        Clock.let(Clock.live) {
+            Abort.run[Timeout](Async.timeout(within)(timeControl.awaitPendingSleeper(duration))).map {
+                case Result.Success(_) => Absent
+                case _ => Present(s"the $timer (${duration.show}) was never armed on the controlled clock within ${within.show}")
+            }
+        }
     end awaitArmed
 
     /** Run `scenario` against this backend's transport.
