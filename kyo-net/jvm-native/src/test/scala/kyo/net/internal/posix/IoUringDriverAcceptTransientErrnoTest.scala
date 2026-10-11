@@ -127,7 +127,7 @@ class IoUringDriverAcceptTransientErrnoTest extends Test:
     end connectClient
 
     "IoUringDriver accept transient-errno classification" - {
-        "a transient accept errno does not fail the accept promise; a subsequent connection is still accepted" in {
+        "a transient accept errno does not fail the accept promise; a subsequent connection is still accepted".times(500) in {
             PosixTestSockets.assumeUring()
             withInjectingDriver { (drv, recording, sockets) =>
                 val (serverFd, port) = listenSocket()
@@ -170,7 +170,7 @@ class IoUringDriverAcceptTransientErrnoTest extends Test:
             }.map { case (serverFd, sockets) => assertClosedOnce(sockets, serverFd) }
         }
 
-        "an EMFILE accept errno re-arms after a resource backoff, not immediately (no reap-carrier busy-spin)" in {
+        "an EMFILE accept errno re-arms after a resource backoff, not immediately (no reap-carrier busy-spin)".times(500) in {
             PosixTestSockets.assumeUring()
             withInjectingDriver { (drv, recording, sockets) =>
                 val (serverFd, port) = listenSocket()

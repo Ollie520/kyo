@@ -104,7 +104,7 @@ abstract class Test extends kyo.test.Test[Any]:
       * as Pending, so marking a cell that cancels would hide that it never ran.
       */
     private def cellLeaf(name: String, runnable: => Boolean, pending: Maybe[String]): kyo.test.TestBuilder =
-        val leaf = name.tagged()
+        val leaf = name.times(500)
         pending.filter(_ => runnable).fold(leaf)(reason => leaf.pendingUntilFixed(reason))
 
     private def backendLeaves(skipCell: String => Maybe[String], pendingCell: String => Maybe[String] = _ => Absent)(
@@ -249,7 +249,7 @@ abstract class Test extends kyo.test.Test[Any]:
         scenario: (Transport, Clock.TimeControl) => (kyo.test.AssertScope ?=> Unit < (Async & Abort[NetException | Closed] & Scope))
     )(using Frame): Unit =
         TestBackends.all.foreach { entry =>
-            s"[${entry.name}]" in {
+            s"[${entry.name}]".times(500) in {
                 if !entry.isAvailable then cancel(s"backend ${entry.name} not available on this host")
                 else onClock(entry)(scenario)
             }

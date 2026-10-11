@@ -66,7 +66,7 @@ class WritePumpPollerTest extends Test:
 
     "WritePump over PollerIoDriver" - {
 
-        "spans reach the peer in offer order" in {
+        "spans reach the peer in offer order".times(500) in {
             PosixTestSockets.assumePoller()
             val spy = new RecordingIoDriver(PollerIoDriver.init())
             discard(spy.start())
@@ -90,7 +90,7 @@ class WritePumpPollerTest extends Test:
             }
         }
 
-        "a pump parked on a full socket resumes as the peer drains and delivers every byte in order" in {
+        "a pump parked on a full socket resumes as the peer drains and delivers every byte in order".times(500) in {
             PosixTestSockets.assumePoller()
             val spy = new RecordingIoDriver(PollerIoDriver.init())
             discard(spy.start())
@@ -114,7 +114,7 @@ class WritePumpPollerTest extends Test:
             }
         }
 
-        "a real peer reset surfaces as a write Error and tears the pump down" in {
+        "a real peer reset surfaces as a write Error and tears the pump down".times(500) in {
             PosixTestSockets.assumePoller()
             val spy         = new RecordingIoDriver(PollerIoDriver.init())
             val closedLatch = Promise.Unsafe.init[Unit, Any]()
@@ -145,7 +145,9 @@ class WritePumpPollerTest extends Test:
         // the wait Closed. A writable first resumes the tail on the poll carrier, and that write may fail on the closed handle, finish and go
         // Idle on the closed channel, or park again on a fresh wait that the close must still fail. Every interleaving must terminate in
         // teardown.
-        "closing the handle and the channel under a parked pump tears it down whichever lands first, the close or a writable event" in {
+        "closing the handle and the channel under a parked pump tears it down whichever lands first, the close or a writable event".times(
+            500
+        ) in {
             PosixTestSockets.assumePoller()
             val spy         = new RecordingIoDriver(PollerIoDriver.init())
             val closedLatch = Promise.Unsafe.init[Unit, Any]()

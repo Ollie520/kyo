@@ -224,7 +224,7 @@ class NioTransportTest extends Test:
     // (about 2 minutes on Linux) only the deadline's failure can release the socket. The deadline runs on the transport's controlled clock, so
     // the socket is sampled while the connect is pending for as long as it takes to see it, and its absence after the deadline is the release.
     // A host that answers or cannot route TEST-NET-1 completes the connect before the deadline, so the question cannot be asked there.
-    "a connect failed by its deadline releases its socket at once, plaintext and TLS" in {
+    "a connect failed by its deadline releases its socket at once, plaintext and TLS".times(500) in {
         given Frame                      = Frame.internal
         def sockets(): (Boolean, String) =
             blackHoleSockets().getOrElse(cancel("neither /proc/self/fd, netstat nor lsof is available to list this process's sockets"))
@@ -881,7 +881,7 @@ class NioTransportTest extends Test:
     // peer-close grace wiring (the NIO twin of the JS transport wiring test)
     // -----------------------------------------------------------------------
 
-    "threads peerCloseGrace end-to-end: an abandoned backpressured accepted connection is reclaimed after the client FIN" in {
+    "threads peerCloseGrace end-to-end: an abandoned backpressured accepted connection is reclaimed after the client FIN".times(500) in {
         given Frame = Frame.internal
         // Cap-1 inbound + 64-byte read chunk so a 128-byte client write becomes two reads, the second overflowing the channel and parking the
         // accepted-side ReadPump with no armed read. Without NioTransport threading config.peerCloseGrace into the handle and the Connection, the

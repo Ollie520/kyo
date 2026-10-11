@@ -8,7 +8,7 @@ class TestTest extends Test:
 
     "armedThenAdvance" - {
 
-        "fails naming the timer when no sleeper of its duration is armed, whatever else is armed" in {
+        "fails naming the timer when no sleeper of its duration is armed, whatever else is armed".times(500) in {
             Clock.withTimeControl { tc =>
                 Clock.use { clock =>
                     val other = clock.unsafe.sleep(100.millis)
@@ -26,7 +26,7 @@ class TestTest extends Test:
             }
         }
 
-        "waits for a timer armed after it starts, then fires it" in {
+        "waits for a timer armed after it starts, then fires it".times(500) in {
             Clock.withTimeControl { tc =>
                 Clock.use { clock =>
                     Fiber.initUnscoped(armedThenAdvance(tc, "close-flush grace", 200.millis)).map { advancing =>
@@ -37,7 +37,7 @@ class TestTest extends Test:
             }
         }
 
-        "advances by the step it is given, leaving the timer armed short of its deadline" in {
+        "advances by the step it is given, leaving the timer armed short of its deadline".times(500) in {
             Clock.withTimeControl { tc =>
                 Clock.use { clock =>
                     val timer = clock.unsafe.sleep(200.millis)

@@ -18,13 +18,13 @@ class ConnectionPoolTest extends Test:
         Sync.Unsafe.evalOrThrow(ConnectionPool.init[NetAddress, String](max, kyo.Duration.Infinity, _ => true, _ => ()))
 
     "poll" - {
-        "returns empty when no idle connections" in {
+        "returns empty when no idle connections".times(500) in {
             val pool   = mkPool()
             val result = pool.poll(key1)
             assert(result == Maybe.empty)
         }
 
-        "returns released connection" in {
+        "returns released connection".times(500) in {
             val pool = mkPool()
             pool.release(key1, "conn1")
             val result = pool.poll(key1)
@@ -33,7 +33,7 @@ class ConnectionPoolTest extends Test:
     }
 
     "release" - {
-        "discards when full" in {
+        "discards when full".times(500) in {
             val discardCount = new AtomicInteger(0)
             val pool         = Sync.Unsafe.evalOrThrow(ConnectionPool.init[NetAddress, String](
                 2,
@@ -49,13 +49,13 @@ class ConnectionPoolTest extends Test:
     }
 
     "tryReserve" - {
-        "returns true when under limit" in {
+        "returns true when under limit".times(500) in {
             val pool     = mkPool()
             val reserved = pool.tryReserve(key1)
             assert(reserved)
         }
 
-        "returns false when at limit" in {
+        "returns false when at limit".times(500) in {
             val pool = mkPool(2)
             val r1   = pool.tryReserve(key1)
             assert(r1)
@@ -67,7 +67,7 @@ class ConnectionPoolTest extends Test:
     }
 
     "limit" - {
-        "of one admits one connection and keeps one idle" in {
+        "of one admits one connection and keeps one idle".times(500) in {
             val discarded = new AtomicInteger(0)
             val pool      = Sync.Unsafe.evalOrThrow(ConnectionPool.init[NetAddress, String](
                 1,
@@ -86,7 +86,7 @@ class ConnectionPoolTest extends Test:
             assert(pool.poll(key1) == Maybe.empty)
         }
 
-        "of zero admits no connection and keeps none idle" in {
+        "of zero admits no connection and keeps none idle".times(500) in {
             val discarded = new AtomicInteger(0)
             val pool      = Sync.Unsafe.evalOrThrow(ConnectionPool.init[NetAddress, String](
                 0,
@@ -100,13 +100,13 @@ class ConnectionPoolTest extends Test:
             assert(pool.poll(key1) == Maybe.empty)
         }
 
-        "below zero admits no connection" in {
+        "below zero admits no connection".times(500) in {
             val pool = mkPool(-3)
             assert(!pool.tryReserve(key1))
         }
     }
 
-    "idle timeout of zero discards a released connection at once" in {
+    "idle timeout of zero discards a released connection at once".times(500) in {
         val discarded = new AtomicInteger(0)
         val pool      = Sync.Unsafe.evalOrThrow(ConnectionPool.init[NetAddress, String](
             2,
@@ -121,7 +121,7 @@ class ConnectionPoolTest extends Test:
 
     "unreserve" - {
         // Releasing an in-flight slot frees capacity so a subsequent tryReserve succeeds again.
-        "frees a reserved slot so tryReserve succeeds again" in {
+        "frees a reserved slot so tryReserve succeeds again".times(500) in {
             val pool = mkPool(2)
             assert(pool.tryReserve(key1))
             assert(pool.tryReserve(key1))
@@ -137,7 +137,7 @@ class ConnectionPoolTest extends Test:
     }
 
     "close" - {
-        "returns idle connections" in {
+        "returns idle connections".times(500) in {
             val pool = mkPool()
             pool.release(key1, "a")
             pool.release(key1, "b")
@@ -145,14 +145,14 @@ class ConnectionPoolTest extends Test:
             assert(conns.size == 2)
         }
 
-        "returns empty when no idle connections" in {
+        "returns empty when no idle connections".times(500) in {
             val pool  = mkPool()
             val conns = pool.close()
             assert(conns.size == 0)
         }
     }
 
-    "isAlive check during poll" in {
+    "isAlive check during poll".times(500) in {
         val discardCount = new AtomicInteger(0)
         val pool         = Sync.Unsafe.evalOrThrow(ConnectionPool.init[NetAddress, String](
             2,
@@ -167,7 +167,7 @@ class ConnectionPoolTest extends Test:
         assert(discardCount.get() == 1)
     }
 
-    "idle-timeout eviction during poll" in {
+    "idle-timeout eviction during poll".times(500) in {
         // Idle-age reads the withTimeControl-rebound clock, so advancing past the timeout evicts on the next poll, no sleep. The finite
         // timeout also spawns a reaper, but poll or reaper each discards a conn exactly once, so the counts hold regardless of interleaving.
         Clock.withTimeControl { tc =>
@@ -191,7 +191,7 @@ class ConnectionPoolTest extends Test:
         }
     }
 
-    "reaper expires an idle connection with no further poll" in {
+    "reaper expires an idle connection with no further poll".times(500) in {
         // Without a reaper, a connection released and never polled again is never closed (an fd leak); a finite timeout spawns one that
         // closes it with no poll. On the withTimeControl clock, advancing past the timeout wakes it; a discard-callback latch fences.
         Clock.withTimeControl { tc =>
@@ -219,7 +219,7 @@ class ConnectionPoolTest extends Test:
         }
     }
 
-    "reaper expires idle connections across multiple host pools" in {
+    "reaper expires idle connections across multiple host pools".times(500) in {
         // The sweep iterates every host pool, so an idle connection is closed regardless of its host. Release one to each
         // of two hosts, never poll, and assert the reaper closes both. On virtual time; a latch counting both discards fences.
         Clock.withTimeControl { tc =>
@@ -251,7 +251,7 @@ class ConnectionPoolTest extends Test:
     "host pool eviction" - {
         // Each key's ring is three arrays sized to maxConnectionsPerHost, so a long-lived client that reaches many distinct hosts must not
         // keep one per host forever. The map is handed in through the init production uses, so its size is the retained-memory measure.
-        "the reaper drops the host pools that hold no connection and no reservation" in {
+        "the reaper drops the host pools that hold no connection and no reservation".times(500) in {
             Clock.withTimeControl { tc =>
                 val hosts  = 50
                 val pools  = new java.util.concurrent.ConcurrentHashMap[NetAddress, ConnectionPool.HostPool]()
@@ -280,7 +280,7 @@ class ConnectionPoolTest extends Test:
             }
         }
 
-        "without a reaper, reaching new hosts keeps the retained pools within twice the live ones" in {
+        "without a reaper, reaching new hosts keeps the retained pools within twice the live ones".times(500) in {
             // An infinite idle timeout runs no reaper, so only creating a host pool can evict. Live hosts hold an idle connection each; the
             // transient ones are reserved and released with nothing pooled, as a connect that failed leaves them.
             val pools = new java.util.concurrent.ConcurrentHashMap[NetAddress, ConnectionPool.HostPool]()
@@ -303,7 +303,7 @@ class ConnectionPoolTest extends Test:
             assert(idle == liveKeys.map(key => Present(key.toString)), "a live host lost its idle connection to eviction")
         }
 
-        "a host pool with an idle connection or an outstanding reservation is kept, and an evicted host is usable again" in {
+        "a host pool with an idle connection or an outstanding reservation is kept, and an evicted host is usable again".times(500) in {
             Clock.withTimeControl { tc =>
                 val pools  = new java.util.concurrent.ConcurrentHashMap[NetAddress, ConnectionPool.HostPool]()
                 val idle   = NetAddress.Tcp("idle", 80)
@@ -333,7 +333,7 @@ class ConnectionPoolTest extends Test:
         }
     }
 
-    "release that observes close mid-publish disposes the connection, never orphans it (fd-leak race regression, CI #1837)" in {
+    "release that observes close mid-publish disposes the connection, never orphans it (fd-leak race regression, CI #1837)".times(500) in {
         // The shared-transport fd leak: release(key, conn) passes its `closed` check, then close() runs (drains every host
         // pool, sets closed, clears the map). Release then re-creates a host pool via computeIfAbsent and publishes into a
         // ring nothing else will ever drain, so the connection's socket is never closed (the CI dump: pendingCloses=0, recv
@@ -352,7 +352,7 @@ class ConnectionPoolTest extends Test:
         )
     }
 
-    "close drains concurrently with releases without orphaning or double-disposing (concurrency smoke)" in {
+    "close drains concurrently with releases without orphaning or double-disposing (concurrency smoke)".times(500) in {
         // The linearizable-drain path under real preemption: `n` concurrent releases race one close on a ring sized to hold
         // them, so close catches slots mid-publish and its drain must spin over them rather than stop. Every released
         // connection ends up extracted by close or discarded, exactly once. This also guards the drain's spin against

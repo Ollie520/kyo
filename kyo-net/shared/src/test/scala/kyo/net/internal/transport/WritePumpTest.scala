@@ -40,7 +40,7 @@ class WritePumpTest extends Test:
 
     "WritePump" - {
 
-        "a Done write goes back to the channel: one write per span, bytes in offer order, start is the only info log" in {
+        "a Done write goes back to the channel: one write per span, bytes in offer order, start is the only info log".times(500) in {
             val f     = new Fixture()
             val spans = Chunk.from((0 until 16).map(i => span(i * 16, i + 1)))
             spans.foreach(s => assert(f.offer(s) == Result.succeed(true)))
@@ -59,7 +59,7 @@ class WritePumpTest extends Test:
             assert(f.teardowns.get() == 0)
         }
 
-        "an empty span is written as Done and the pump takes the next span" in {
+        "an empty span is written as Done and the pump takes the next span".times(500) in {
             val f     = new Fixture()
             val empty = Span.empty[Byte]
             val next  = span(1, 3)
@@ -73,7 +73,7 @@ class WritePumpTest extends Test:
             assert(f.teardowns.get() == 0)
         }
 
-        "a Partial write parks on writable and leaves later spans queued until the retry finishes" in {
+        "a Partial write parks on writable and leaves later spans queued until the retry finishes".times(500) in {
             val f      = new Fixture(Step.Accept(3))
             val parked = span(0, 10)
             assert(f.offer(parked) == Result.succeed(true))
@@ -97,7 +97,7 @@ class WritePumpTest extends Test:
             assert(f.teardowns.get() == 0)
         }
 
-        "every park resumes the same span at the offset the driver reported, through Partial, EAGAIN and tail backpressure" in {
+        "every park resumes the same span at the offset the driver reported, through Partial, EAGAIN and tail backpressure".times(500) in {
             val f    = new Fixture(Step.Accept(4), Step.Accept(0), Step.TailFull, Step.Accept(3))
             val data = span(0, 12)
             assert(f.offer(data) == Result.succeed(true))
@@ -122,7 +122,7 @@ class WritePumpTest extends Test:
             assert(f.teardowns.get() == 0)
         }
 
-        "a write Error tears the pump down once and drops the queued spans" in {
+        "a write Error tears the pump down once and drops the queued spans".times(500) in {
             val f = new Fixture(Step.Fail)
             assert(f.offer(span(0, 4)) == Result.succeed(true))
             assert(f.offer(span(10, 4)) == Result.succeed(true))
@@ -135,7 +135,7 @@ class WritePumpTest extends Test:
             assert(f.driver.wire.isEmpty)
         }
 
-        "a write Error on the retry after a park tears the pump down" in {
+        "a write Error on the retry after a park tears the pump down".times(500) in {
             val f      = new Fixture(Step.Accept(2), Step.Fail)
             val parked = span(0, 8)
             assert(f.offer(parked) == Result.succeed(true))
@@ -150,7 +150,7 @@ class WritePumpTest extends Test:
             assert(f.driver.wire == bytesOf(parked).take(2))
         }
 
-        "closing the handle under a parked pump fails its writable wait and tears it down without another write" in {
+        "closing the handle under a parked pump fails its writable wait and tears it down without another write".times(500) in {
             val f = new Fixture(Step.Accept(2))
             assert(f.offer(span(0, 8)) == Result.succeed(true))
             f.pump.start()
@@ -163,7 +163,7 @@ class WritePumpTest extends Test:
             assert(f.driver.writes.size == 1, "the parked tail is undeliverable once the handle is closed")
         }
 
-        "a writable wait failed with a NetException tears the pump down" in {
+        "a writable wait failed with a NetException tears the pump down".times(500) in {
             val f = new Fixture(Step.Accept(2))
             assert(f.offer(span(0, 8)) == Result.succeed(true))
             f.pump.start()
@@ -175,7 +175,7 @@ class WritePumpTest extends Test:
             assert(f.driver.writes.size == 1)
         }
 
-        "closing the channel while the pump waits for a take tears it down without a write" in {
+        "closing the channel while the pump waits for a take tears it down without a write".times(500) in {
             val f = new Fixture()
             f.pump.start()
             assert(f.state.get() == WriteState.Idle)
@@ -186,7 +186,7 @@ class WritePumpTest extends Test:
             assert(f.driver.writes.isEmpty)
         }
 
-        "a graceful close while parked delivers the parked tail and every queued span before the pump tears down" in {
+        "a graceful close while parked delivers the parked tail and every queued span before the pump tears down".times(500) in {
             val f      = new Fixture(Step.Accept(3))
             val parked = span(0, 10)
             val queued = span(40, 6)
@@ -203,7 +203,7 @@ class WritePumpTest extends Test:
             assert(f.state.get() == WriteState.TornDown)
         }
 
-        "a writable that wins the race with a handle close resumes onto the closed handle and tears down on the write Error" in {
+        "a writable that wins the race with a handle close resumes onto the closed handle and tears down on the write Error".times(500) in {
             val f      = new Fixture(Step.Accept(2))
             val parked = span(0, 8)
             assert(f.offer(parked) == Result.succeed(true))
@@ -218,7 +218,7 @@ class WritePumpTest extends Test:
             assert(f.driver.wire == bytesOf(parked).take(2))
         }
 
-        "a handle close that lands between a Partial write and its park tears the pump down through the failed wait" in {
+        "a handle close that lands between a Partial write and its park tears the pump down through the failed wait".times(500) in {
             val f = new Fixture(Step.Accept(2))
             assert(f.offer(span(0, 8)) == Result.succeed(true))
             f.driver.afterNextWrite(() => f.driver.closeHandle(()))
@@ -230,7 +230,7 @@ class WritePumpTest extends Test:
             assert(f.driver.writes.size == 1)
         }
 
-        "a writable that completes inside awaitWritable resumes the parked tail and the pump goes Idle" in {
+        "a writable that completes inside awaitWritable resumes the parked tail and the pump goes Idle".times(500) in {
             val f      = new Fixture(Step.Accept(3))
             val parked = span(0, 8)
             assert(f.offer(parked) == Result.succeed(true))
@@ -244,7 +244,7 @@ class WritePumpTest extends Test:
             assert(f.teardowns.get() == 0)
         }
 
-        "a Partial at the end of the span parks, and the retry at that offset finishes the span without extra bytes" in {
+        "a Partial at the end of the span parks, and the retry at that offset finishes the span without extra bytes".times(500) in {
             val data = span(0, 6)
             val f    = new Fixture(Step.AcceptPark(6), Step.Accept(0))
             assert(f.offer(data) == Result.succeed(true))
@@ -258,7 +258,7 @@ class WritePumpTest extends Test:
             assert(f.state.get() == WriteState.Idle)
         }
 
-        "a hard channel close while parked still delivers the parked tail, then the failed take tears the pump down" in {
+        "a hard channel close while parked still delivers the parked tail, then the failed take tears the pump down".times(500) in {
             val f      = new Fixture(Step.Accept(3))
             val parked = span(0, 10)
             assert(f.offer(parked) == Result.succeed(true))
@@ -280,7 +280,7 @@ class WritePumpTest extends Test:
         // Nothing in the pump can tear it down while it is Flushing, since no take or writable is pending then, so this lost CAS is a defensive
         // branch with no reachable trigger. Setting TornDown inside the write stands in for a teardown there; the reachable close race is the
         // close between a Partial and its park above.
-        "a teardown forced during a Partial write drops the captured tail: no park and no further write" in {
+        "a teardown forced during a Partial write drops the captured tail: no park and no further write".times(500) in {
             val f = new Fixture(Step.Accept(2))
             assert(f.offer(span(0, 8)) == Result.succeed(true))
             f.driver.onNextWrite(() => f.state.set(WriteState.TornDown))
@@ -294,7 +294,7 @@ class WritePumpTest extends Test:
         }
 
         // The same defensive branch on the Done side.
-        "a teardown forced during a Done write keeps the pump torn down: no further take" in {
+        "a teardown forced during a Done write keeps the pump torn down: no further take".times(500) in {
             val f = new Fixture()
             assert(f.offer(span(0, 8)) == Result.succeed(true))
             f.driver.onNextWrite(() => f.state.set(WriteState.TornDown))

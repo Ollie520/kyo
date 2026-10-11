@@ -59,7 +59,7 @@ class ReadPumpBackpressureTest extends Test:
         // Given: the inbound channel filled then drained
         // When: the write pump is parked (AwaitingWritable)
         // Then: inbound data is still deliverable (no deadlock between write backpressure and inbound)
-        "backpressure-does-not-deadlock-inbound" in {
+        "backpressure-does-not-deadlock-inbound".times(500) in {
             val driver = new ParkingWriteDriver
             val conn   = Connection.init[Unit]((), driver, 8)
             // start() fires readPump and writePump. The readPump's driver.awaitRead delivers a span
@@ -95,7 +95,7 @@ class ReadPumpBackpressureTest extends Test:
         // This exercises the re-arm path in ReadPump.requestNextRead: after a Bytes delivery that
         // the channel accepts, the pump calls becomeAvailable() (resets the IOPromise) and then
         // driver.awaitRead exactly once. No batching, no double-arm.
-        "read-rearm-exactly-once-per-drain" in {
+        "read-rearm-exactly-once-per-drain".times(500) in {
             var awaitReadCalls = 0
 
             // Driver delivers one span on the first awaitRead call (the initial arm), then parks on
@@ -173,7 +173,7 @@ class ReadPumpBackpressureTest extends Test:
         // `peerCloseGrace = Infinity` (reclaim opt-out, so no grace timer is armed) and the spy driver leaves `isPeerClosed` at its no-op default
         // (false): the pump still stops arming reads at cap+1 (model unchanged), and with no grace timer and no peer-close signal the handle is
         // held, the pre-guard behavior a backend without the override retains.
-        "a backpressured read arms no further read; with no peer-close detection the handle is held" in {
+        "a backpressured read arms no further read; with no peer-close detection the handle is held".times(500) in {
             val cap = 1
             final class BackpressureFinDriver extends IoDriver[Unit]:
                 val awaitReadCalls                                             = AtomicInt.Unsafe.init(0)
@@ -262,7 +262,7 @@ class ReadPumpBackpressureTest extends Test:
 
         // Abandoned case: the pump parks, the peer FIN arrives while parked, the consumer never drains. Advancing past the grace fires the expiry,
         // which polls isPeerClosed and reclaims. Time is controlled so the expiry is deterministic, not a real-time wait.
-        "a peer FIN with no consumer progress reclaims after the grace elapses" in {
+        "a peer FIN with no consumer progress reclaims after the grace elapses".times(500) in {
             Clock.withTimeControl { tc =>
                 Clock.get.map { clock =>
                     val driver = new WatchDriver(1)
@@ -281,7 +281,7 @@ class ReadPumpBackpressureTest extends Test:
 
         // Live-consumer case: the pump parks, the peer FIN arrives, but the consumer drains before any expiry. Progress disarms the timer
         // synchronously on the take, so advancing fully past the grace still must NOT reclaim, and the overflow span the pump held is delivered.
-        "a peer FIN with consumer progress within the grace does not reclaim and loses no bytes" in {
+        "a peer FIN with consumer progress within the grace does not reclaim and loses no bytes".times(500) in {
             Clock.withTimeControl { tc =>
                 Clock.get.map { clock =>
                     val driver = new WatchDriver(1)
@@ -308,7 +308,7 @@ class ReadPumpBackpressureTest extends Test:
 
         // Re-arm case: the first expiry finds the peer still live (isPeerClosed false), so it re-arms instead of reclaiming; the next expiry, after
         // the peer closes, reclaims. Proves a non-reclaiming expiry keeps waiting rather than settling the episode.
-        "a grace expiry with the peer still live re-arms, and reclaims only once the peer closes" in {
+        "a grace expiry with the peer still live re-arms, and reclaims only once the peer closes".times(500) in {
             Clock.withTimeControl { tc =>
                 Clock.get.map { clock =>
                     val driver = new WatchDriver(1)

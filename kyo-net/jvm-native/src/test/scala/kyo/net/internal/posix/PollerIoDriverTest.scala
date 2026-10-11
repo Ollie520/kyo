@@ -138,7 +138,7 @@ class PollerIoDriverTest extends Test:
             }.map(_ => succeed)
         }
 
-        "a peer reset surfaces as a receive failure carrying ECONNRESET" in {
+        "a peer reset surfaces as a receive failure carrying ECONNRESET".times(500) in {
             assumePoller()
             withDriver { driver =>
                 loopbackPair().map { case (client, accepted) =>

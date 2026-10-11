@@ -115,7 +115,7 @@ class PosixTransportAcceptEmfileTest extends Test:
 
     "PosixTransport accept loop" - {
 
-        "does not spin on acceptNow EMFILE while a connection is pending (bounded retry)" in {
+        "does not spin on acceptNow EMFILE while a connection is pending (bounded retry)".times(500) in {
             assumePollerReady()
             val settled       = Promise.Unsafe.init[AcceptGuard, Any]()
             val secondBackoff = Promise.Unsafe.init[Unit, Any]()
@@ -186,7 +186,7 @@ class PosixTransportAcceptEmfileTest extends Test:
             }
         }
 
-        "the accept re-armed after a backoff reports the connection still queued" in {
+        "the accept re-armed after a backoff reports the connection still queued".times(500) in {
             assumePollerReady()
             // The retry after the backoff hits the injected EMFILE again and backs off a second time, so the second backoff proves the re-armed
             // accept ran. A queued connection produces no new readiness transition: an arm that waits for one strands it, no second backoff

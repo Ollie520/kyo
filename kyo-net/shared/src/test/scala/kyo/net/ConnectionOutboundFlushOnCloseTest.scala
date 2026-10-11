@@ -48,7 +48,7 @@ class ConnectionOutboundFlushOnCloseTest extends Test:
         def handleLabel(handle: Unit): String       = "spy"
     end SpyDriver
 
-    "queued-outbound-flushed-before-fd-close" in {
+    "queued-outbound-flushed-before-fd-close".times(500) in {
         val spy   = new SpyDriver
         val conn  = Connection.init[Unit]((), spy, 8)
         val spans = List(Span(1.toByte), Span(2.toByte), Span(3.toByte))
@@ -107,7 +107,7 @@ class ConnectionOutboundFlushOnCloseTest extends Test:
             def handleLabel(handle: Unit): String       = "stalled"
         end StalledPeerDriver
 
-        "the tail of a span parked mid-write reaches the peer before the fd closes" in {
+        "the tail of a span parked mid-write reaches the peer before the fd closes".times(500) in {
             val driver = new StalledPeerDriver
             val conn   = Connection.init[Unit]((), driver, 8)
             conn.start()
@@ -126,7 +126,7 @@ class ConnectionOutboundFlushOnCloseTest extends Test:
             )
         }
 
-        "a peer that never reads is released after a window with no write progress" in {
+        "a peer that never reads is released after a window with no write progress".times(500) in {
             Clock.withTimeControl { tc =>
                 Clock.get.map { clock =>
                     val driver = new StalledPeerDriver
@@ -151,7 +151,7 @@ class ConnectionOutboundFlushOnCloseTest extends Test:
             }
         }
 
-        "a peer that keeps reading is never cut and receives the whole tail" in {
+        "a peer that keeps reading is never cut and receives the whole tail".times(500) in {
             Clock.withTimeControl { tc =>
                 Clock.get.map { clock =>
                     val driver = new StalledPeerDriver
@@ -179,7 +179,7 @@ class ConnectionOutboundFlushOnCloseTest extends Test:
             }
         }
 
-        "an infinite grace keeps waiting for the peer" in {
+        "an infinite grace keeps waiting for the peer".times(500) in {
             Clock.withTimeControl { tc =>
                 Clock.get.map { clock =>
                     val driver = new StalledPeerDriver
