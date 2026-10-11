@@ -2618,7 +2618,7 @@ private[net] object PosixTransport:
             stdioClaimed = AtomicBoolean.Unsafe.init(false),
             onAcceptResourceBackoff = onAcceptResourceBackoff,
             acceptLoopsActive = AtomicLong.Unsafe.init(0),
-            clock = Clock.live
+            clock = clock
         )
 
     /** True when `ioDriver` is the readiness poller AND that poller is epoll (the only backend the regular-file fallback applies to). io_uring's driver has

@@ -1685,7 +1685,7 @@ private[kyo] object NioTransport:
         // IoBackendPlatform.transport, which invokes this init only when the Nio floor is the selected entry.
         val driver = kyo.net.internal.backend.NioBackend.createDriver()
         discard(driver.start())
-        new NioTransport(driver, Clock.live)
+        new NioTransport(driver, clock)
     end init
 
     /** Create an SSLContext from NetTlsConfig.
