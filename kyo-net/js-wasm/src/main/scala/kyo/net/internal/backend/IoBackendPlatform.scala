@@ -31,7 +31,7 @@ private[net] object NodeBackend extends Entry:
         JsIoDriver.init()
 
     /** JS is single-threaded (one Node event loop), so one `JsIoDriver` suffices; `JsTransport.init` builds the pool over `createDriver`. */
-    def build()(using AllowUnsafe, Frame): Transport =
+    def build(clock: Clock = Clock.live)(using AllowUnsafe, Frame): Transport =
         JsTransport.init(poolSize = 1)
 end NodeBackend
 
