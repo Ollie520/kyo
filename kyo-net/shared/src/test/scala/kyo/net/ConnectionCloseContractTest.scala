@@ -55,8 +55,13 @@ class ConnectionCloseContractTest extends Test:
             val grace             = 7.seconds
             val nonTerminationCap = (timeout.toMillis / 100 / 2).toInt
             val accepted          = Promise.Unsafe.init[Connection, Any]()
+            // A parked pump does not prove the send buffer is full: io_uring parks on its own unsent-tail bound while a send is in flight and
+            // the kernel can still take bytes. A loopback send buffer grows to megabytes, so a default-depth queue (256 KiB) can flush whole
+            // after the close and release with no window. A 32 MiB queue is beyond the largest send buffer Linux and macOS grow by default
+            // (4 MiB).
+            val config = NetConfig(channelCapacity = 512, closeFlushGrace = grace.grace)
             for
-                listener <- transport.listen("127.0.0.1", 0, 16, NetConfig(closeFlushGrace = grace.grace)) { conn =>
+                listener <- transport.listen("127.0.0.1", 0, 16, config) { conn =>
                     accepted.completeDiscard(Result.succeed(conn))
                 }.safe.get
                 _       <- Scope.ensure(Sync.defer(listener.close()))
