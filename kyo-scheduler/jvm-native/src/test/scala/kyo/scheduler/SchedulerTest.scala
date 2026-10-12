@@ -7,6 +7,8 @@ import java.util.concurrent.FutureTask
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import org.scalatest.NonImplicitAssertions
 import org.scalatest.concurrent.Eventually
 import org.scalatest.freespec.AnyFreeSpec
@@ -66,6 +68,45 @@ class SchedulerTest extends AnyFreeSpec with NonImplicitAssertions with Eventual
             )
             scheduler.schedule(task)
             cdl.await()
+        }
+
+        "from another scheduler's worker places the task on this scheduler" in withScheduler { origin =>
+            withScheduler { target =>
+                val done  = new CountDownLatch(1)
+                val outer = new AtomicReference[Worker]
+                val inner = new AtomicReference[Worker]
+                origin.schedule(TestTask(_run = () => {
+                    outer.set(Worker.current())
+                    target.schedule(TestTask(_run = () => {
+                        inner.set(Worker.current())
+                        done.countDown()
+                        Task.Done
+                    }))
+                    Task.Done
+                }))
+                assert(done.await(10, TimeUnit.SECONDS))
+                assert(outer.get() ne null)
+                assert(inner.get() ne null)
+                assert(inner.get() ne outer.get(), "the task ran on the submitting scheduler's worker")
+            }
+        }
+
+        "flush from another scheduler's worker leaves that worker's queue in place" in withScheduler { origin =>
+            withScheduler { target =>
+                val done    = new CountDownLatch(1)
+                val queued  = TestTask()
+                val flushes = new AtomicLong(-1L)
+                origin.schedule(TestTask(_run = () => {
+                    origin.schedule(queued)
+                    target.flush()
+                    flushes.set(target.status().flushes)
+                    done.countDown()
+                    Task.Done
+                }))
+                assert(done.await(10, TimeUnit.SECONDS))
+                assert(flushes.get() == 0L, "flush drained a worker the scheduler does not own")
+                eventually(assert(queued.executions == 1))
+            }
         }
     }
 

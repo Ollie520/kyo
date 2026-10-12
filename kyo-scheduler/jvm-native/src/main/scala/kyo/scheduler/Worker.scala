@@ -83,7 +83,7 @@ import scala.util.control.NonFatal
   *   Scheduler for how workers are managed
   */
 abstract private class Worker(
-    id: Int,
+    val id: Int,
     exec: Executor,
     scheduleTask: (Task, Worker) => Unit,
     stealTask: Worker => Task,
@@ -176,7 +176,7 @@ abstract private class Worker(
 
     /** Transitions the worker from Idle to Dispatched and requests a thread from the executor. run() claims the
       * worker by taking the Dispatched -> Running edge, so a dispatch that never mounts leaves the worker
-      * Dispatched, which is what recoverStrand detects.
+      * Dispatched with its queue in place.
       */
     def wakeup() = {
         if ((state.get() eq State.Idle) && state.compareAndSet(State.Idle, State.Dispatched))

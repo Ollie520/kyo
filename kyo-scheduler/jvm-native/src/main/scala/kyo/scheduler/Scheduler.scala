@@ -341,7 +341,7 @@ final class Scheduler private[scheduler] (
         val nowMs          = clock.currentMillis()
         var worker: Worker = null
         if (submitter eq null) {
-            worker = Worker.current()
+            worker = currentWorker()
             if ((worker ne null) && ((worker eq submitter) || !worker.checkAvailability(nowMs)))
                 worker = null
         }
@@ -422,11 +422,20 @@ final class Scheduler private[scheduler] (
       * threads.
       */
     def flush() = {
-        val worker = Worker.current()
+        val worker = currentWorker()
         if (worker ne null) {
             flushes.increment()
             worker.drain()
         }
+    }
+
+    /** The calling thread's worker when this scheduler owns it, else null. `Worker.current()` is per thread, not per scheduler, so a
+      * thread mounted by another scheduler instance would otherwise receive this one's placements and flushes.
+      */
+    private def currentWorker(): Worker = {
+        val worker = Worker.current()
+        if ((worker ne null) && worker.id < workers.length && (workers(worker.id) eq worker)) worker
+        else null
     }
 
     /** Calculates the current average load across all workers.
