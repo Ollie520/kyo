@@ -167,11 +167,9 @@ class PosixTransportAcceptEmfileTest extends Test:
                                 )
                             // Time is held, so no acceptNow can follow until the backoff elapses on the transport's clock.
                             atFirst <- Sync.defer(spy.acceptNowCalls.get())
-                            _       <- armed(tc, "accept resource backoff", backoff)
-                            _       <- tc.advance(backoff.minusOrZero(1.millis))
-                            _       <- armed(tc, "accept resource backoff", backoff)
+                            _       <- armedThenAdvance(tc, "accept resource backoff", backoff, by = backoff.minusOrZero(1.millis))
                             early   <- Sync.defer(spy.acceptNowCalls.get())
-                            _       <- tc.advance(1.millis)
+                            _       <- armedThenAdvance(tc, "accept resource backoff", backoff, by = 1.millis)
                             // The re-armed accept must report the connection still queued: it produces no new readiness transition, so an
                             // arm that waits for one strands it until another client connects and the leaf hangs to its cap.
                             _        <- secondBackoff.safe.get

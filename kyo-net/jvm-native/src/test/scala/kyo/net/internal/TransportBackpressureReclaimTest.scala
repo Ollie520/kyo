@@ -41,7 +41,7 @@ class TransportBackpressureReclaimTest extends kyo.net.Test:
                 _        <- Abort.run[Closed](client.outbound.safe.put(Span.fromUnsafe(Array.fill[Byte](128)(1))))
                 // The pump arms its grace on the transport's clock exactly when it parks, so the pending sleeper IS the parked state. A FIN
                 // arriving while a read is still armed takes the ordinary EOF path, leaving the grace reclaim untested.
-                _ <- armed(control, "peer-close grace", grace)
+                _ <- awaitTimer(control, "peer-close grace", grace)
                 _ <- awaitState(accepted.inbound.pendingPuts().getOrElse(0) > 0)
                 openBeforeExpiry = accepted.isOpen
                 _ <- Sync.defer(client.close())

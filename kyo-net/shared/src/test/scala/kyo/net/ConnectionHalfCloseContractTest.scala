@@ -33,8 +33,11 @@ class ConnectionHalfCloseContractTest extends Test:
         kyo.test.AssertScope
     ): Unit < (Async & Abort[NetException | Closed] & Scope) =
         if !RawRelay.available then cancel("the raw relay needs posix sockets, which this host does not have")
-        val request  = Array.fill[Byte](64)(5)
-        val response = Array.fill[Byte](64)(6)
+        val request = Array.fill[Byte](64)(5)
+        // Many spans, so the writes after the FIN keep parking on the pump long past the moment a violating close seals outbound: one span
+        // could land in the window between inbound ending and that seal, and pass where the clause is broken.
+        val spans    = 16
+        val response = Array.tabulate[Byte](spans * 64 * 1024)(i => (i % 251).toByte)
         val accepted = Promise.Unsafe.init[Connection, Any]()
         for
             listener <- tls match
@@ -46,23 +49,26 @@ class ConnectionHalfCloseContractTest extends Test:
             client <- tls match
                 case Present((_, clientTls)) => transport.connectTls("127.0.0.1", relay.port, clientTls).safe.get
                 case Absent                  => transport.connect("127.0.0.1", relay.port).safe.get
-            _        <- Scope.ensure(Sync.defer(client.close()))
-            server   <- accepted.safe.get
-            _        <- Scope.ensure(Sync.defer(server.close()))
-            _        <- client.outbound.safe.put(Span.fromUnsafe(request))
-            got      <- takeBytes(server, request.length)
-            _        <- relay.halfCloseUpstream()
-            ended    <- Abort.run[Closed](server.inbound.safe.take)
-            put      <- Abort.run[Closed](server.outbound.safe.put(Span.fromUnsafe(response)))
+            _       <- Scope.ensure(Sync.defer(client.close()))
+            server  <- accepted.safe.get
+            _       <- Scope.ensure(Sync.defer(server.close()))
+            _       <- client.outbound.safe.put(Span.fromUnsafe(request))
+            got     <- takeBytes(server, request.length)
+            _       <- relay.halfCloseUpstream()
+            ended   <- Abort.run[Closed](server.inbound.safe.take)
+            drained <- Fiber.init(drainToEnd(client))
+            put     <- Abort.run[Closed](Kyo.foreachDiscard(Chunk.from(0 until spans)) { i =>
+                server.outbound.safe.put(Span.fromUnsafe(response.slice(i * 64 * 1024, (i + 1) * 64 * 1024)))
+            })
             _        <- Sync.defer(server.close())
-            received <- drainToEnd(client)
+            received <- drained.get
         yield
             assert(got.sameElements(request), "the request must reach the server before the peer's FIN")
             assert(ended.isFailure, s"the peer's FIN must end inbound; got $ended")
             assert(put.isSuccess, s"outbound must stay writable after the peer's FIN; got $put")
             assert(
                 received.sameElements(response),
-                s"the response written after the peer's FIN must reach it: ${received.length} of 64 bytes"
+                s"the response written after the peer's FIN must reach it: ${received.length} of ${response.length} bytes"
             )
         end for
     end responseAfterPeerFin

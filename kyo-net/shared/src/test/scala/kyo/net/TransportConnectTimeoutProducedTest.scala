@@ -97,10 +97,9 @@ class TransportConnectTimeoutProducedTest extends Test:
         val timeout = 30.seconds
         for
             connect <- Sync.defer(transport.connect(blackHoleHost, blackHolePort, timeout))
-            _       <- armed(tc, "connect deadline", timeout)
-            _       <- tc.advance(timeout.minusOrZero(1.millis))
+            _       <- armedThenAdvance(tc, "connect deadline", timeout, by = timeout.minusOrZero(1.millis))
             early   <- Sync.defer(connect.done())
-            _       <- tc.advance(1.millis)
+            _       <- armedThenAdvance(tc, "connect deadline", timeout, by = 1.millis)
             outcome <- Abort.run[NetException](connect.safe.get)
         yield
             assert(!early, "the connect must still be pending 1ms before its deadline")

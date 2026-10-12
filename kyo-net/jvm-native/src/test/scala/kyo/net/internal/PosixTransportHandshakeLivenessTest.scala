@@ -66,10 +66,8 @@ class PosixTransportHandshakeLivenessTest extends Test:
                         _        <- Scope.ensure(Sync.defer(listener.close()))
                         client   <- transport.connect("127.0.0.1", listener.port, Duration.Infinity).safe.get
                         _        <- Scope.ensure(Sync.defer(client.close()))
-                        _        <- armed(tc, "server handshake deadline", timeout)
-                        _        <- tc.advance(timeout.minusOrZero(1.millis))
-                        _        <- armed(tc, "server handshake deadline", timeout)
-                        _        <- tc.advance(1.millis)
+                        _        <- armedThenAdvance(tc, "server handshake deadline", timeout, by = timeout.minusOrZero(1.millis))
+                        _        <- armedThenAdvance(tc, "server handshake deadline", timeout, by = 1.millis)
                         outcome  <- Abort.run[Closed](client.inbound.safe.take)
                     yield
                         val reaped = outcome match

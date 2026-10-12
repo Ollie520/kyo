@@ -907,7 +907,7 @@ class NioTransportTest extends Test:
                             }
                             // The pump arms its grace on the transport's clock exactly when it parks, so the pending sleeper IS the parked
                             // state; a FIN before parking is reclaimed via the EOF path, leaving grace reclaim untested.
-                            _ <- armed(control, "peer-close grace", grace)
+                            _ <- awaitTimer(control, "peer-close grace", grace)
                             openBeforeExpiry = accepted.isOpen
                             _ <- Sync.defer(client.close()) // FIN with the pump parked
                             // An expiry that runs before the FIN reaches the accepted socket finds the peer live and re-arms, so the clock is
